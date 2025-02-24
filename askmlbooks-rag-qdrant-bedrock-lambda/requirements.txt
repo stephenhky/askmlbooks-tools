@@ -1,0 +1,8 @@
+boto3
+botocore
+python-dotenv
+langchain
+langchain-aws
+langchain-community
+langchain-qdrant
+gpt4all
