@@ -1,15 +1,17 @@
 
 import os
 import json
-import logging
 
 import boto3
 from botocore.config import Config
+from langchain import hub
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_aws.llms.bedrock import BedrockLLM
 from langchain_community.embeddings.gpt4all import GPT4AllEmbeddings
 from langchain_qdrant import QdrantVectorStore
-from langchain.chains import RetrievalQA
+from loguru import logger
 from dotenv import load_dotenv
 
 
@@ -40,17 +42,14 @@ def convert_langchaindoc_to_dict(doc):
 
 def lambda_handler(events, context):
     # get query
-    logging.info(events)
-    print(events)
+    logger.info(events)
     rawdict = False
     if isinstance(events['body'], dict):
-        logging.info("dictionary")
-        print("dictionary")
+        logger.info("dictionary")
         query = events['body']
         rawdict = True
     else:
-        logging.info("string")
-        print("string")
+        logger.info("string")
         query = json.loads(events['body'])
 
     # get query question
@@ -92,16 +91,25 @@ def lambda_handler(events, context):
         prefer_grpc=True
     )
     retriever = qdrant.as_retriever()
-    print(' -> Vector database loaded and retrieved initialized.')
+    logger.info(' -> Vector database loaded and retrieved initialized.')
 
     # getting the chain
-    print('Making langchain')
-    qa = RetrievalQA.from_chain_type(llm=llm, chain_type='stuff', retriever=retriever, return_source_documents=True)
+    logger.info('Making langchain')
+    prompt = hub.pull("rlm/rag-prompt")
+    qa = (
+        {
+            "context": retriever,
+            "qustion": RunnablePassthrough()
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
 
     # get the results
-    print('Grabbing results...')
-    result_json = qa.invoke({'query': question})
-    print(result_json)
+    logger.info('Grabbing results...')
+    result_json = qa.invoke(question)
+    logger.info(result_json)
     result_dict = {
         'query': result_json['query'],
         'answer': result_json['result'],

@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.12
 
 ADD . /code
 
@@ -6,10 +6,6 @@ WORKDIR /code
 
 RUN apt-get update && \
   apt-get install -y \
-  gcc \
-  g++ \
-  libc6 \
-  gfortran \
   make \
   cmake \
   unzip \

@@ -6,3 +6,4 @@ langchain-aws
 langchain-community
 langchain-qdrant
 gpt4all
+loguru
