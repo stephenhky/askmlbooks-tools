@@ -13,6 +13,7 @@ RUN apt-get update && \
 
 RUN pip install -U pip
 RUN pip install -r requirements.txt
+RUN pip install gpt4all
 RUN pip install awslambdaric boto3
 
 ENTRYPOINT [ "python", "-m", "awslambdaric" ]

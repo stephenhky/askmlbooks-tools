@@ -65,7 +65,7 @@ def lambda_handler(events, context):
         "top_p": 0.8
     })
     bedrock_runtime = get_bedrock_runtime('us-east-1', config=Config(read_timeout=1024))
-    llm = get_langchain_bedrock_llm(llm_name, bedrock_runtime, config=llm_config)
+    llm = get_langchain_bedrock_llm(llm_name, bedrock_runtime, region_name="us-east-1", model_kwargs=llm_config)
 
     # loading the embedding model
     # the embedding model must be saved to EFS first
@@ -99,7 +99,7 @@ def lambda_handler(events, context):
     qa = (
         {
             "context": retriever,
-            "qustion": RunnablePassthrough()
+            "question": RunnablePassthrough()
         }
         | prompt
         | llm

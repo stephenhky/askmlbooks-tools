@@ -1,9 +1,9 @@
 boto3
 botocore
+gpt4all
 python-dotenv
 langchain
 langchain-aws
 langchain-community
 langchain-qdrant
-gpt4all
 loguru
