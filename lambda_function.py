@@ -119,7 +119,7 @@ def lambda_handler(events, context):
     result_dict = {
         'query': result_json['input'],
         'answer': result_json['answer'],
-        'context': [convert_langchaindoc_to_dict(doc) for doc in result_json['source_documents']]
+        'context': [convert_langchaindoc_to_dict(doc) for doc in result_json['context']]
     }
 
     # return
