@@ -5,8 +5,10 @@ import json
 import boto3
 from botocore.config import Config
 from langchain import hub
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+# from langchain_core.output_parsers import StrOutputParser
+# from langchain_core.runnables import RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_aws.llms.bedrock import BedrockLLM
 from langchain_community.embeddings.gpt4all import GPT4AllEmbeddings
@@ -65,7 +67,7 @@ def lambda_handler(events, context):
         "top_p": 0.8
     })
     bedrock_runtime = get_bedrock_runtime('us-east-1', config=Config(read_timeout=1024))
-    llm = get_langchain_bedrock_llm(llm_name, bedrock_runtime, config=llm_config)
+    llm = get_langchain_bedrock_llm(llm_name, bedrock_runtime, region_name="us-east-1", model_kwargs=llm_config)
 
     # loading the embedding model
     # the embedding model must be saved to EFS first
@@ -94,26 +96,30 @@ def lambda_handler(events, context):
     logger.info(' -> Vector database loaded and retrieved initialized.')
 
     # getting the chain
-    logger.info('Making langchain')
-    prompt = hub.pull("rlm/rag-prompt")
-    qa = (
-        {
-            "context": retriever,
-            "qustion": RunnablePassthrough()
-        }
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+    # logger.info('Making langchain')
+    # prompt = hub.pull("rlm/rag-prompt")
+    # qa = (
+    #     {
+    #         "context": retriever,
+    #         "question": RunnablePassthrough()
+    #     }
+    #     | prompt
+    #     | llm
+    #     | StrOutputParser()
+    # )
+    retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
+
+    combine_docs_chain = create_stuff_documents_chain(llm, retrieval_qa_chat_prompt)
+    rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
 
     # get the results
     logger.info('Grabbing results...')
-    result_json = qa.invoke(question)
+    result_json = rag_chain.invoke({"input": question})
     logger.info(result_json)
     result_dict = {
-        'query': result_json['query'],
-        'answer': result_json['result'],
-        'source_documents': [convert_langchaindoc_to_dict(doc) for doc in result_json['source_documents']]
+        'query': result_json['input'],
+        'answer': result_json['answer'],
+        'context': [convert_langchaindoc_to_dict(doc) for doc in result_json['context']]
     }
 
     # return
