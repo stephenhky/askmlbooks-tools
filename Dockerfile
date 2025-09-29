@@ -1,6 +1,6 @@
 FROM python:3.12
 
-ADD askmlbooks-rag-qdrant-bedrock-lambda /code
+ADD . /code
 
 WORKDIR /code
 
